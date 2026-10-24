@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Menú</title>
+		<style>
+			/* Paleta azul */
+			:root {
+				--azul-fondo: #e8f1fb;
+				--azul-claro: #bcd6f5;
+				--azul-medio: #2f6fd1;
+				--azul-oscuro: #163f7a;
+				--azul-tinta: #0d2547;
+				--blanco: #ffffff;
+			}
+
+			@media (prefers-color-scheme: dark) {
+				:root {
+					--azul-fondo: #0b1a30;
+					--azul-claro: #24426e;
+					--azul-medio: #4c8ef0;
+					--azul-oscuro: #9cc2f7;
+					--azul-tinta: #e3eefc;
+				}
+			}
+
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			html,
+			body {
+				height: 100%;
+			}
+
+			body {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: var(--azul-fondo);
+				color: var(--azul-tinta);
+				font-family:
+					system-ui,
+					-apple-system,
+					"Segoe UI",
+					Roboto,
+					sans-serif;
+				padding: 1.5rem;
+			}
+
+			.menu {
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 1.5rem;
+				text-align: center;
+			}
+
+			.menu h1 {
+				font-size: 2rem;
+				font-weight: 700;
+				color: var(--azul-oscuro);
+			}
+
+			.botones {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: center;
+				gap: 1rem;
+			}
+
+			.boton {
+				display: inline-block;
+				min-width: 180px;
+				padding: 0.9rem 1.8rem;
+				border-radius: 10px;
+				font-size: 1.05rem;
+				font-weight: 600;
+				text-decoration: none;
+				transition:
+					background-color 0.2s,
+					color 0.2s,
+					transform 0.1s;
+			}
+
+			.boton:active {
+				transform: scale(0.97);
+			}
+
+			.boton:focus-visible {
+				outline: 3px solid var(--azul-medio);
+				outline-offset: 3px;
+			}
+
+			.boton-principal {
+				background: var(--azul-medio);
+				color: var(--blanco);
+			}
+
+			.boton-principal:hover {
+				background: var(--azul-oscuro);
+				color: var(--azul-fondo);
+			}
+
+			.boton-secundario {
+				background: transparent;
+				color: var(--azul-medio);
+				border: 2px solid var(--azul-medio);
+			}
+
+			.boton-secundario:hover {
+				background: var(--azul-claro);
+			}
+		</style>
+	</head>
+	<body>
+		<main class="menu">
+			<h1>Visualizaciones finales</h1>
+			<nav class="botones">
+				<a
+					href="/visualizaciones_finales/histogramas_de_variables.html"
+					class="boton boton-principal"
+					>Histograma mejorado</a
+				>
+				<a
+					href="/visualizaciones_finales/distribucion_de_variables.html"
+					class="boton boton-principal"
+					>Diagrama de cajas mejorado</a
+				>
+			</nav>
+		</main>
+	</body>
+</html>

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<title>Visualización de potabilidad del agua</title>
+
+		<script type="module">
+			//------------------------------------------------
+			// Importar librerías necesarias para la visualización
+			//------------------------------------------------
+			import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+			import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+			// ------------------------------------------------
+			// Cargar datos del CSV
+			// ------------------------------------------------
+			const rawData = await d3.csv(
+				"../water_potability.csv",
+			);
+			let data = rawData.map((d) => ({
+				potabilidad: Number(d.Potability),
+				ph: Number(d.ph),
+				hardness: Number(d.Hardness),
+				turbidity: Number(d.Turbidity),
+				chloramines: Number(d.Chloramines),
+				sulfate: Number(d.Sulfate),
+				conductivity: Number(d.Conductivity),
+				organic_carbon: Number(d.Organic_carbon),
+				trihalomethanes: Number(d.Trihalomethanes),
+			}));
+			// ------------------------------------------------
+			// Filtrar datos incompletos
+			// ------------------------------------------------
+			const columns = [
+				"potabilidad",
+				"ph",
+				"hardness",
+				"turbidity",
+				"chloramines",
+				"sulfate",
+				"conductivity",
+				"organic_carbon",
+				"trihalomethanes",
+			];
+			data = data.filter((d) =>
+				columns.every(
+					(column) =>
+						d[column] !== null && d[column] !== undefined && d[column] !== "",
+				),
+			);
+			// ------------------------------------------------
+			// Elementos HTML
+			// ------------------------------------------------
+			const container = document.querySelector("#chart");
+			const filter = document.querySelector("#groupFilter");
+			// ------------------------------------------------
+			// Crear opciones de filtro automáticamente
+			// ------------------------------------------------
+			const variables = [
+				"ph",
+				"hardness",
+				"turbidity",
+				"chloramines",
+				"sulfate",
+				"conductivity",
+				"organic_carbon",
+				"trihalomethanes",
+			];
+
+			variables.forEach((group) => {
+				const option = document.createElement("option");
+
+				option.value = group;
+				option.textContent = group;
+
+				filter.appendChild(option);
+			});
+
+			// ------------------------------------------------
+			// Dibujar gráfico
+			// ------------------------------------------------
+
+			function drawChart() {
+				container.innerHTML = "";
+
+				// Obtener la variable seleccionada
+				const selectedGroup = filter.value;
+
+				// Filtrar el conjunto de datos según la opción seleccionada
+				const chart = Plot.plot({
+					width: container.clientWidth,
+					height: 400,
+
+					marginLeft: 60,
+					marginBottom: 70,
+
+					x: {
+						label: "Potabilidad",
+						padding: 0.4,
+					},
+
+					y: {
+						label: filter.value,
+						grid: true,
+						nice: true,
+					},
+
+					marks: [
+						// ------------------------------------------
+						// Diagrama de cajas
+						// ------------------------------------------
+
+						Plot.boxY(data, {
+							x: "potabilidad",
+							y: filter.value,
+							fill: "#4f86c6",
+							fillOpacity: 0.6,
+							stroke: "#2563eb",
+						}),
+						// ------------------------------------------
+						// Punto interactivo al pasar el cursor
+						// ------------------------------------------
+
+						Plot.dot(
+							data,
+							Plot.pointer({
+								x: "potabilidad",
+								y: filter.value,
+								r: 7,
+								fill: "#e11d48",
+								stroke: "white",
+								strokeWidth: 1,
+							}),
+						),
+
+						// ------------------------------------------
+						// Información emergente interactiva
+						// ------------------------------------------
+
+						Plot.tip(
+							data,
+							Plot.pointer({
+								x: "potabilidad",
+								y: filter.value,
+
+								title: (d) =>
+									`${d.potabilidad}\n${filter.value}: ${d[filter.value]}`,
+							}),
+						),
+					],
+				});
+
+				container.append(chart);
+			}
+
+			// ------------------------------------------------
+			// Gráfico inicial
+			// ------------------------------------------------
+
+			drawChart();
+
+			// ------------------------------------------------
+			// Interacción del filtro
+			// ------------------------------------------------
+
+			filter.addEventListener("change", drawChart);
+
+			// ------------------------------------------------
+			// Función de redimensionamiento del gráfico
+			// ------------------------------------------------
+
+			const resizeObserver = new ResizeObserver(drawChart);
+
+			resizeObserver.observe(container);
+		</script>
+		<!-- ----------------------------------------------->
+		<!--Estilos adicionales 					  -->
+		<!-- ----------------------------------------------->
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 40px;
+				background: #f5f7fa;
+			}
+
+			.chart-container {
+				max-width: 1000px;
+				margin: auto;
+				background: white;
+				padding: 25px;
+				border-radius: 12px;
+			}
+
+			h2 {
+				margin-top: 0;
+			}
+
+			.controls {
+				margin-bottom: 25px;
+			}
+
+			.controls label {
+				font-weight: bold;
+				margin-right: 10px;
+			}
+
+			select {
+				padding: 8px 12px;
+				border: 1px solid #ccc;
+				border-radius: 6px;
+				font-size: 14px;
+				cursor: pointer;
+			}
+
+			#chart {
+				width: 100%;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="chart-container">
+			<h2>Distribución de variables por potabilidad</h2>
+
+			<!-- Filtro interactivo -->
+
+			<div class="controls">
+				<label for="groupFilter"> Elegir variable: </label>
+
+				<select id="groupFilter"></select>
+			</div>
+
+			<!-- Gráfico -->
+
+			<div id="chart"></div>
+		</div>
+	</body>
+</html>

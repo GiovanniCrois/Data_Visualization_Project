@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<title>Histogramas de Variables</title>
+		<!-- -------------------------------------------
+        Estilos para la visualización de histogramas
+        ------------------------------------------- -->
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 40px;
+				background: #f5f7fa;
+			}
+
+			.chart-container {
+				max-width: 1000px;
+				margin: auto;
+				background: white;
+				padding: 25px;
+				border-radius: 12px;
+			}
+
+			h2 {
+				margin-top: 0;
+			}
+
+			.controls {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 30px;
+				margin-bottom: 25px;
+			}
+
+			.control-group {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+			}
+
+			label {
+				font-weight: bold;
+				font-size: 14px;
+			}
+
+			select {
+				padding: 8px 12px;
+				border: 1px solid #ccc;
+				border-radius: 6px;
+				font-size: 14px;
+			}
+
+			input[type="range"] {
+				width: 200px;
+				cursor: pointer;
+			}
+
+			.summary {
+				margin-top: 20px;
+				padding: 15px;
+				background: #f1f5f9;
+				border-radius: 8px;
+				font-size: 14px;
+			}
+
+			#chart {
+				width: 100%;
+			}
+
+			@media (max-width: 600px) {
+				body {
+					margin: 10px;
+				}
+
+				.chart-container {
+					padding: 15px;
+				}
+			}
+			.master-container {
+				max-width: 1200px;
+				margin: auto;
+				flex-direction: row;
+				display: flex;
+			}
+			.charts-wrapper {
+				display: flex;
+				gap: 20px;
+			}
+		</style>
+	</head>
+
+	<body>
+		<h1>Distribución de variables en agua potable y no potable</h1>
+		<div class="master-container">
+			<div>
+				<div class="controls">
+					<!-- Filtro de variable -->
+
+					<div class="control-group">
+						<label for="programFilter"> Variable: </label>
+
+						<select id="programFilter"></select>
+					</div>
+				</div>
+				<div class="charts-wrapper">
+					<div class="chart-container">
+						<h2 class="chart-title">
+							Distribución de Variables - Agua Potable
+						</h2>
+
+						<!-- Histograma del agua potable -->
+
+						<div id="chart"></div>
+
+						<!-- Resumen del agua potable -->
+						<div id="summary" class="summary"></div>
+					</div>
+					<div class="chart-container">
+						<h2 class="chart-title">
+							Distribución de Variables - Agua No Potable
+						</h2>
+
+						<!-- Histograma del agua no potable -->
+
+						<div id="chart"></div>
+
+						<!-- Resumen del agua no potable -->
+
+						<div id="summary" class="summary"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script type="module">
+			import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+			import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+			// --------------------------------------------
+			// Leer el CSV
+			// --------------------------------------------
+			const rawData = await d3.csv("../water_potability.csv");
+			// --------------------------------------------
+			// PREPARAR DATOS
+			// --------------------------------------------
+			const columns = rawData.columns.slice(0, -1);
+			let data = rawData.filter((d) =>
+				columns.every(
+					(column) =>
+						d[column] !== null && d[column] !== undefined && d[column] !== "",
+				),
+			);
+			const potableData = data.filter((d) => d.Potability === "1");
+			const nonPotableData = data.filter((d) => d.Potability === "0");
+			// --------------------------------------------
+			// Elementos HTML
+			// --------------------------------------------
+
+			const potableContainer = document.querySelector("#chart");
+			const nonPotableContainer = document.querySelectorAll("#chart")[1];
+
+			const variableFilter = document.querySelectorAll("#programFilter")[0];
+
+			const potableSummary = document.querySelectorAll("#summary")[0];
+			const nonPotableSummary = document.querySelectorAll("#summary")[1];
+
+			const potableTitle = document.querySelectorAll(".chart-title")[0];
+			const nonPotableTitle = document.querySelectorAll(".chart-title")[1];
+
+			// --------------------------------------------
+			// Crear filtro de variables
+			// --------------------------------------------
+
+			const programs = rawData.columns.slice(0, -1);
+
+			programs.forEach((program) => {
+				const option = document.createElement("option");
+
+				option.value = program;
+
+				option.textContent = program;
+
+				variableFilter.appendChild(option);
+			});
+
+			// --------------------------------------------
+			// Dibujar histograma
+			// --------------------------------------------
+
+			function drawChart(
+				dataFrame,
+				title,
+				subtitle,
+				container,
+				variableFilter,
+				summary,
+				titleElement,
+				fillColor,
+			) {
+				container.innerHTML = "";
+				titleElement.textContent = title;
+
+				// Get controls
+				const selectedProgram = variableFilter.value;
+				// ------------------------------------------
+				// FILTER DATA
+				// ------------------------------------------
+				const filteredData = dataFrame.filter(
+					(d) =>
+						d[selectedProgram] !== undefined &&
+						d[selectedProgram] !== null &&
+						d[selectedProgram] !== "",
+				);
+				// RANGO DEL EJE X * se usa con el total de los datos, esto para que tengan la misma escala ambos histogramas
+				const xrange = [
+					d3.min(data, (d) => +d[selectedProgram]),
+					d3.max(data, (d) => +d[selectedProgram]),
+				];
+				// ------------------------------------------
+				// CREATE HISTOGRAM
+				// ------------------------------------------
+				const chart = Plot.plot({
+					width: Math.max(container.clientWidth, 320),
+
+					height: 300,
+
+					marginLeft: 60,
+					marginBottom: 60,
+					marginRight: 30,
+
+					// X AXIS
+
+					x: {
+						label: selectedProgram,
+
+						domain: xrange,
+
+						grid: true,
+					},
+
+					// Y AXIS
+
+					y: {
+						label: "Frecuencia",
+
+						grid: true,
+					},
+
+					marks: [
+						// --------------------------------------
+						// HISTOGRAMA
+						// --------------------------------------
+
+						Plot.rectY(
+							filteredData,
+
+							Plot.binX(
+								{
+									y: "count",
+								},
+
+								{
+									x: selectedProgram,
+
+									thresholds: 10,
+
+									fill: fillColor,
+
+									fillOpacity: 0.8,
+
+									stroke: "white",
+
+									inset: 1,
+
+									tip: true,
+								},
+							),
+						),
+
+						// --------------------------------------
+						// LÍNEA BASE
+						// --------------------------------------
+
+						Plot.ruleY([0]),
+					],
+				});
+
+				container.append(chart);
+
+				// ------------------------------------------
+				// Calcular estadísticas para el resumen
+				// ------------------------------------------
+
+				const scores = filteredData.map((d) => +d[selectedProgram]);
+
+				if (scores.length === 0) {
+					summary.textContent = "No observations available.";
+
+					return;
+				}
+
+				const mean =
+					scores.reduce((sum, value) => sum + value, 0) / scores.length;
+
+				const min = Math.min(...scores);
+
+				const max = Math.max(...scores);
+
+				summary.innerHTML = `
+        <strong>Muestras:</strong>
+        ${scores.length}
+
+        &nbsp; | &nbsp;
+
+        <strong>Promedio:</strong>
+        ${mean.toFixed(2)}
+
+        &nbsp; | &nbsp;
+
+        <strong>Mínimo:</strong>
+        ${min.toFixed(2)}
+
+        &nbsp; | &nbsp;
+
+        <strong>Máximo:</strong>
+        ${max.toFixed(2)}
+    `;
+			}
+
+			// --------------------------------------------
+			drawChart(
+				nonPotableData,
+				"Agua potable",
+				"",
+				potableContainer,
+				variableFilter,
+				potableSummary,
+				potableTitle,
+				"#4f86c6",
+			);
+			// --------------------------------------------
+			drawChart(
+				potableData,
+				"Agua no potable",
+				"",
+				nonPotableContainer,
+				variableFilter,
+				nonPotableSummary,
+				nonPotableTitle,
+				"#f28e2b",
+			);
+			variableFilter.addEventListener("change", () => {
+				drawChart(
+					potableData,
+					"Agua potable",
+					"",
+					potableContainer,
+					variableFilter,
+					potableSummary,
+					potableTitle,
+					"#4f86c6",
+				);
+				drawChart(
+					nonPotableData,
+					"Agua no potable",
+					"",
+					nonPotableContainer,
+					variableFilter,
+					nonPotableSummary,
+					nonPotableTitle,
+					"#f28e2b",
+				);
+			});
+
+			variableFilter.addEventListener("change", () => {
+				drawChart(
+					potableData,
+					"Agua potable",
+					"",
+					potableContainer,
+					variableFilter,
+					potableSummary,
+					potableTitle,
+					"#4f86c6",
+				);
+				drawChart(
+					nonPotableData,
+					"Agua no potable",
+					"",
+					nonPotableContainer,
+					variableFilter,
+					nonPotableSummary,
+					nonPotableTitle,
+					"#f28e2b",
+				);
+			});
+			// --------------------------------------------
+			// función para redibujar los gráficos al cambiar el tamaño de la ventana   
+			// --------------------------------------------
+
+			let resizeTimer;
+			resizeTimer = setTimeout(() => {
+				drawChart(
+					potableData,
+					"Agua potable",
+					"",
+					potableContainer,
+					variableFilter,
+					potableSummary,
+					potableTitle,
+					"#4f86c6",
+				);
+				drawChart(
+					nonPotableData,
+					"Agua no potable",
+					"",
+					nonPotableContainer,
+					variableFilter,
+					nonPotableSummary,
+					nonPotableTitle,
+					"#f28e2b",
+				);
+			}, 100);
+			resizeTimer = setTimeout(() => {
+				drawChart(
+					potableData,
+					"Agua potable",
+					"",
+					"",
+					potableContainer,
+					variableFilter,
+					potableSummary,
+					potableTitle,
+					"#4f86c6",
+				);
+				drawChart(
+					nonPotableData,
+					"Agua no potable",
+					"",
+					nonPotableContainer,
+					variableFilter,
+					nonPotableSummary,
+					nonPotableTitle,
+					"#f28e2b",
+				);
+			}, 100);
+
+			resizeObserver.observe(container);
+		</script>
+	</body>
+</html>
